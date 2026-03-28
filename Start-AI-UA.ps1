@@ -24,6 +24,14 @@ function Test-LocalServer {
   }
 }
 
+function Get-ServerStatus {
+  try {
+    return Invoke-RestMethod -Uri $statusUrl -Method Get -TimeoutSec 2
+  } catch {
+    return $null
+  }
+}
+
 if (-not (Test-Path -LiteralPath $serverScript)) {
   throw "Missing server.ps1"
 }
@@ -39,6 +47,27 @@ if (-not (Test-LocalServer)) {
   Start-Sleep -Seconds 2
 } else {
   Write-Host (T "0KHQtdGA0LLQtdGAINGD0LbQtSDQt9Cw0L/Rg9GJ0LXQvdC40Lkg0LDQsdC+INCy0ZbQtNC60YDQuNCy0YHRjyDQsiDQvdC+0LLQvtC80YMg0LLRltC60L3Rli4=")
+}
+
+$status = $null
+for ($attempt = 0; $attempt -lt 10 -and -not $status; $attempt++) {
+  $status = Get-ServerStatus
+  if (-not $status) {
+    Start-Sleep -Seconds 1
+  }
+}
+
+if ($status -and $status.primaryUrl) {
+  Write-Host ("Phone URL: " + $status.primaryUrl)
+  try {
+    Set-Clipboard -Value $status.primaryUrl
+    Write-Host "Phone URL copied to clipboard."
+  } catch {
+  }
+}
+
+if ($status -and $status.localUrl) {
+  $chatUrl = [string]$status.localUrl
 }
 
 Write-Host (T "0JLRltC00LrRgNC40LLQsNGOINGH0LDRgiDRgyDQsdGA0LDRg9C30LXRgNGWLi4u")

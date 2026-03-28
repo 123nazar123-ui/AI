@@ -376,6 +376,25 @@
       line-height: 1.35;
     }
 
+    .network-hint {
+      margin-top: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .network-hint a {
+      color: var(--white);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.24);
+    }
+
+    .network-hint a:hover {
+      border-bottom-color: rgba(255, 255, 255, 0.65);
+    }
+
     .status-actions {
       margin-top: 12px;
       display: flex;
@@ -500,6 +519,7 @@
             </div>
 
             <div class="legal" id="statusText">Локальний режим. Для відкриття додатків запустіть Start-AI.cmd.</div>
+            <div class="network-hint" id="networkHint"></div>
             <div class="status-actions">
               <a class="launcher-chip" id="launcherBtn" href="#">Увімкнути запуск програм</a>
             </div>
@@ -523,6 +543,7 @@
       clearChat: document.getElementById("clearChat"),
       sidebarHistory: document.getElementById("sidebarHistory"),
       statusText: document.getElementById("statusText"),
+      networkHint: document.getElementById("networkHint"),
       messages: document.getElementById("messages"),
       chatForm: document.getElementById("chatForm"),
       userInput: document.getElementById("userInput"),
@@ -537,6 +558,8 @@
       activeChatId: null,
       isLoading: false,
       backendOnline: false,
+      localUrl: "",
+      primaryUrl: "",
       recognition: null,
       isRecording: false,
       voiceDraft: "",
@@ -725,6 +748,25 @@
       els.statusText.textContent = text;
     }
 
+    function setNetworkHint(url) {
+      els.networkHint.textContent = "";
+
+      if (!url || !state.backendOnline) {
+        return;
+      }
+
+      const prefix = document.createElement("span");
+      prefix.textContent = "З телефона відкрий: ";
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.textContent = url;
+
+      els.networkHint.append(prefix, link);
+    }
+
     function updateLauncherVisibility() {
       const shouldShow = !state.backendOnline;
       els.launcherBtn.classList.toggle("visible", shouldShow);
@@ -895,8 +937,12 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         state.backendOnline = Boolean(data && data.ok);
+        state.localUrl = data && data.localUrl ? data.localUrl : "";
+        state.primaryUrl = data && data.primaryUrl ? data.primaryUrl : "";
       } catch (error) {
         state.backendOnline = false;
+        state.localUrl = "";
+        state.primaryUrl = "";
       }
 
       if (!state.isLoading) {
@@ -904,6 +950,7 @@
           ? "Сервер готовий. Можна відкривати додатки голосом або текстом."
           : DEFAULT_STATUS);
         updateLauncherVisibility();
+        setNetworkHint(state.primaryUrl);
       }
     }
 
