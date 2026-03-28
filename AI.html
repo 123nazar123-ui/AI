@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT Style UI</title>
+  <style>
+    :root {
+      --bg: #212121;
+      --sidebar: #181818;
+      --panel: #2f2f2f;
+      --panel-hover: #3a3a3a;
+      --line: #313131;
+      --text: #f5f5f5;
+      --muted: #b0b0b0;
+      --white: #ffffff;
+      --max-chat: 820px;
+      --font-ui: "Segoe UI", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      overflow: hidden;
+    }
+
+    button, textarea { font: inherit; }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 312px minmax(0, 1fr);
+      background: var(--bg);
+    }
+
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .sidebar-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 10px 12px 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px 4px 10px;
+    }
+
+    .brand-icon,
+    .collapse-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--white);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    .collapse-btn {
+      color: var(--muted);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .sidebar-btn {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .sidebar-btn:hover { background: var(--panel-hover); }
+    .sidebar-btn.primary { background: var(--panel); }
+    .sidebar-btn.primary:hover { background: #383838; }
+
+    .icon {
+      width: 24px;
+      text-align: center;
+      color: var(--white);
+      flex: 0 0 auto;
+      font-size: 1.1rem;
+    }
+
+    .sidebar-divider {
+      margin: 18px 0 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .chat-history {
+      padding: 4px 4px 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .chat-history h3 {
+      margin: 0;
+      padding: 0 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .history-list {
+      display: grid;
+      gap: 4px;
+    }
+
+    .history-entry {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 10px;
+      text-align: left;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-entry:hover { background: var(--panel-hover); }
+
+    .history-entry.active {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .history-empty {
+      padding: 0 8px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.92rem;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: 72px minmax(0, 1fr);
+      min-width: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px 14px 20px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .content {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .stage {
+      min-height: 0;
+      overflow: auto;
+      padding: 0 20px;
+    }
+
+    .hero {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+    }
+
+    .hero-inner {
+      width: min(100%, var(--max-chat));
+      display: grid;
+      gap: 28px;
+      justify-items: center;
+      padding: 40px 0 24px;
+    }
+
+    .hero-title {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(2.2rem, 4vw, 3rem);
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+
+    .messages {
+      width: min(100%, var(--max-chat));
+      margin: 0 auto;
+      padding: 18px 0 28px;
+      display: none;
+      gap: 18px;
+    }
+
+    .app.has-messages .messages { display: grid; }
+    .app.has-messages .hero { display: none; }
+
+    .message { display: grid; gap: 8px; }
+
+    .message-header {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .message-bubble {
+      width: fit-content;
+      max-width: 100%;
+      padding: 14px 16px;
+      border-radius: 18px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    .message.user { justify-items: end; }
+
+    .message.user .message-bubble {
+      background: #303030;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .message.assistant .message-bubble,
+    .message.system .message-bubble {
+      padding-left: 0;
+      padding-right: 0;
+      background: transparent;
+    }
+
+    .composer-shell {
+      padding: 0 20px 18px;
+      background: linear-gradient(180deg, rgba(33, 33, 33, 0) 0%, rgba(33, 33, 33, 0.86) 18%, rgba(33, 33, 33, 1) 44%);
+    }
+
+    .composer-wrap {
+      width: min(100%, var(--max-chat));
+      margin: 0 auto;
+    }
+
+    .composer-form {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #303030;
+      border-radius: 34px;
+      padding: 10px 12px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .composer-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .composer-plus,
+    .voice-chip,
+    .send-chip {
+      border: none;
+      cursor: pointer;
+    }
+
+    .composer-plus {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--white);
+      display: grid;
+      place-items: center;
+      font-size: 1.55rem;
+    }
+
+    .composer-plus:hover { background: rgba(255, 255, 255, 0.06); }
+
+    .voice-chip {
+      min-width: 54px;
+      height: 44px;
+      border-radius: 999px;
+      background: #4a4a4a;
+      color: var(--white);
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .voice-chip:hover { background: #565656; }
+    .voice-chip.is-recording {
+      background: #ffffff;
+      color: #111111;
+    }
+
+    .send-chip {
+      min-width: 132px;
+      height: 44px;
+      border-radius: 999px;
+      background: var(--white);
+      color: #111111;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .send-chip:hover { opacity: 0.92; }
+
+    .composer-input textarea {
+      width: 100%;
+      min-height: 26px;
+      max-height: 160px;
+      border: none;
+      background: transparent;
+      color: var(--white);
+      resize: none;
+      outline: none;
+      padding: 8px 0;
+      line-height: 1.5;
+      font-size: 1rem;
+    }
+
+    .composer-input textarea::placeholder { color: #b4b4b4; }
+
+    .app-shortcuts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      justify-content: center;
+    }
+
+    .shortcut-chip {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #262626;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 14px;
+      cursor: pointer;
+    }
+
+    .shortcut-chip:hover { background: #313131; }
+
+    .legal {
+      margin-top: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.35;
+    }
+
+    .status-actions {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .launcher-chip {
+      display: none;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #262626;
+      color: var(--white);
+      border-radius: 999px;
+      padding: 10px 16px;
+      text-decoration: none;
+    }
+
+    .launcher-chip.visible {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .launcher-chip:hover {
+      background: #313131;
+    }
+
+    .app:not(.has-messages) .composer-shell {
+      background: transparent;
+      padding-bottom: 0;
+    }
+
+    .app:not(.has-messages) .composer-form {
+      width: min(100%, var(--max-chat));
+      margin: 0 auto;
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .topbar,
+      .stage,
+      .composer-shell {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .hero-title { font-size: 2rem; }
+      .voice-chip { min-width: 44px; padding: 0 10px; }
+      .send-chip { min-width: 108px; padding: 0 14px; }
+      .legal { font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="app">
+    <aside class="sidebar">
+      <div class="sidebar-scroll">
+        <div class="sidebar-top">
+          <button class="brand-icon" type="button">◎</button>
+          <button class="collapse-btn" type="button">◧</button>
+        </div>
+
+        <button class="sidebar-btn primary" id="clearChat" type="button">
+          <span class="icon">✎</span>
+          <span>Новий чат</span>
+        </button>
+
+        <button class="sidebar-btn" type="button">
+          <span class="icon">⌕</span>
+          <span>Шукати в чатах</span>
+        </button>
+
+        <div class="sidebar-divider"></div>
+
+        <section class="chat-history">
+          <h3>Історія чатів</h3>
+          <div class="history-list" id="sidebarHistory"></div>
+        </section>
+      </div>
+    </aside>
+
+    <section class="main">
+      <header class="topbar">
+        <div class="top-left">
+          <span>ChatGPT</span>
+          <span>⌄</span>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="stage">
+          <section class="hero">
+            <div class="hero-inner">
+              <h1 class="hero-title">Із чого почнемо?</h1>
+            </div>
+          </section>
+
+          <div class="messages" id="messages"></div>
+        </div>
+
+        <div class="composer-shell">
+          <div class="composer-wrap">
+            <form class="composer-form" id="chatForm">
+              <div class="composer-row">
+                <button class="composer-plus" type="button">＋</button>
+                <div class="composer-input">
+                  <textarea id="userInput" placeholder="Запитайте будь-що"></textarea>
+                </div>
+                <button class="voice-chip" id="voiceBtn" type="button" title="Голосове введення">🎤</button>
+                <button class="send-chip" id="sendBtn" type="submit">Надіслати</button>
+              </div>
+            </form>
+
+            <div class="app-shortcuts">
+              <button class="shortcut-chip" data-app="calculator" type="button">Калькулятор</button>
+              <button class="shortcut-chip" data-app="notepad" type="button">Блокнот</button>
+              <button class="shortcut-chip" data-app="explorer" type="button">Провідник</button>
+              <button class="shortcut-chip" data-app="settings" type="button">Налаштування</button>
+            </div>
+
+            <div class="legal" id="statusText">Локальний режим. Для відкриття додатків запустіть Start-AI.cmd.</div>
+            <div class="status-actions">
+              <a class="launcher-chip" id="launcherBtn" href="#">Увімкнути запуск програм</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const LEGACY_HISTORY_KEY = "local-ai-assistant-history-v4";
+    const CHAT_STORE_KEY = "local-ai-assistant-chats-v2";
+    const DEFAULT_STATUS = "Локальний режим. Для відкриття додатків запустіть Start-AI.cmd.";
+    const BACKEND_BASE = window.location.protocol.startsWith("http")
+      ? window.location.origin
+      : "http://127.0.0.1:8765";
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+    const els = {
+      app: document.getElementById("app"),
+      clearChat: document.getElementById("clearChat"),
+      sidebarHistory: document.getElementById("sidebarHistory"),
+      statusText: document.getElementById("statusText"),
+      messages: document.getElementById("messages"),
+      chatForm: document.getElementById("chatForm"),
+      userInput: document.getElementById("userInput"),
+      sendBtn: document.getElementById("sendBtn"),
+      voiceBtn: document.getElementById("voiceBtn"),
+      launcherBtn: document.getElementById("launcherBtn"),
+      shortcuts: Array.from(document.querySelectorAll(".shortcut-chip"))
+    };
+
+    const state = {
+      chats: [],
+      activeChatId: null,
+      isLoading: false,
+      backendOnline: false,
+      recognition: null,
+      isRecording: false,
+      voiceDraft: "",
+      speakReplyOnce: false
+    };
+
+    function makeChatId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function cloneMessages(messages) {
+      return (Array.isArray(messages) ? messages : []).map((message) => ({
+        role: message.role,
+        text: String(message.text || "")
+      }));
+    }
+
+    function getChatTitle(messages) {
+      const firstUserMessage = cloneMessages(messages).find((message) => message.role === "user" && message.text.trim());
+      if (!firstUserMessage) return "Новий чат";
+      const title = firstUserMessage.text.replace(/\s+/g, " ").trim();
+      return title.length > 32 ? `${title.slice(0, 32)}...` : title;
+    }
+
+    function createChat(messages = []) {
+      const normalized = cloneMessages(messages);
+      return {
+        id: makeChatId(),
+        title: getChatTitle(normalized),
+        updatedAt: Date.now(),
+        messages: normalized
+      };
+    }
+
+    function sortChats() {
+      state.chats.sort((left, right) => right.updatedAt - left.updatedAt);
+    }
+
+    function getActiveChat() {
+      let chat = state.chats.find((item) => item.id === state.activeChatId);
+      if (!chat) {
+        chat = state.chats[0] || createChat();
+        if (!state.chats.length) {
+          state.chats.push(chat);
+        }
+        state.activeChatId = chat.id;
+      }
+      return chat;
+    }
+
+    function getChatHistory() {
+      return getActiveChat().messages;
+    }
+
+    function saveStore() {
+      const activeChat = getActiveChat();
+      activeChat.title = getChatTitle(activeChat.messages);
+      activeChat.updatedAt = Date.now();
+      sortChats();
+
+      localStorage.setItem(
+        CHAT_STORE_KEY,
+        JSON.stringify({
+          activeChatId: state.activeChatId,
+          chats: state.chats
+        })
+      );
+    }
+
+    function loadStore() {
+      const raw = localStorage.getItem(CHAT_STORE_KEY);
+
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          state.chats = Array.isArray(parsed.chats) ? parsed.chats.map((chat) => ({
+            id: chat.id || makeChatId(),
+            title: chat.title || "Новий чат",
+            updatedAt: Number(chat.updatedAt) || Date.now(),
+            messages: cloneMessages(chat.messages)
+          })) : [];
+          state.activeChatId = parsed.activeChatId || (state.chats[0] && state.chats[0].id) || null;
+        } catch (error) {
+          console.error("Не вдалося прочитати список чатів:", error);
+          state.chats = [];
+          state.activeChatId = null;
+        }
+      } else {
+        const legacy = localStorage.getItem(LEGACY_HISTORY_KEY);
+        if (legacy) {
+          try {
+            const messages = JSON.parse(legacy);
+            state.chats = [createChat(Array.isArray(messages) ? messages : [])];
+            state.activeChatId = state.chats[0].id;
+          } catch (error) {
+            state.chats = [createChat()];
+            state.activeChatId = state.chats[0].id;
+          }
+        } else {
+          state.chats = [createChat()];
+          state.activeChatId = state.chats[0].id;
+        }
+      }
+
+      if (!state.chats.length) {
+        state.chats = [createChat()];
+        state.activeChatId = state.chats[0].id;
+      }
+
+      saveStore();
+    }
+
+    function hasConversation() {
+      return getChatHistory().some((message) => message.role !== "system");
+    }
+
+    function roleLabel(role) {
+      if (role === "user") return "Ви";
+      if (role === "assistant") return "ChatGPT";
+      return "Система";
+    }
+
+    function renderSidebarHistory() {
+      els.sidebarHistory.innerHTML = "";
+      sortChats();
+
+      if (!state.chats.length) {
+        const empty = document.createElement("div");
+        empty.className = "history-empty";
+        empty.textContent = "Ще немає чатів.";
+        els.sidebarHistory.appendChild(empty);
+        return;
+      }
+
+      for (const chat of state.chats) {
+        const button = document.createElement("button");
+        button.className = `history-entry${chat.id === state.activeChatId ? " active" : ""}`;
+        button.type = "button";
+        button.textContent = chat.title || "Новий чат";
+        button.title = chat.title || "Новий чат";
+        button.addEventListener("click", () => {
+          state.activeChatId = chat.id;
+          renderMessages();
+          setStatus("Чат відкрито.");
+        });
+        els.sidebarHistory.appendChild(button);
+      }
+    }
+
+    function renderMessages() {
+      const chatHistory = getChatHistory();
+      els.messages.innerHTML = "";
+
+      for (const message of chatHistory) {
+        const article = document.createElement("article");
+        article.className = `message ${message.role}`;
+
+        const header = document.createElement("div");
+        header.className = "message-header";
+        header.textContent = roleLabel(message.role);
+
+        const bubble = document.createElement("div");
+        bubble.className = "message-bubble";
+        bubble.textContent = message.text;
+
+        article.appendChild(header);
+        article.appendChild(bubble);
+        els.messages.appendChild(article);
+      }
+
+      els.app.classList.toggle("has-messages", hasConversation());
+      renderSidebarHistory();
+      els.messages.scrollTop = els.messages.scrollHeight;
+    }
+
+    function pushMessage(role, text) {
+      getActiveChat().messages.push({ role, text });
+      saveStore();
+      renderMessages();
+    }
+
+    function setStatus(text) {
+      els.statusText.textContent = text;
+    }
+
+    function updateLauncherVisibility() {
+      const shouldShow = !state.backendOnline;
+      els.launcherBtn.classList.toggle("visible", shouldShow);
+    }
+
+    function autoResizeInput() {
+      els.userInput.style.height = "26px";
+      els.userInput.style.height = `${Math.min(els.userInput.scrollHeight, 160)}px`;
+    }
+
+    function setLoading(nextLoading) {
+      state.isLoading = nextLoading;
+      els.sendBtn.disabled = nextLoading;
+      els.voiceBtn.disabled = nextLoading;
+      els.sendBtn.textContent = nextLoading ? "..." : "Надіслати";
+      if (nextLoading) {
+        setStatus("Готую відповідь...");
+      }
+    }
+
+    function getRecentUserTopics() {
+      return getChatHistory()
+        .filter((message) => message.role === "user")
+        .slice(-3)
+        .map((message) => message.text.trim())
+        .filter(Boolean);
+    }
+
+    function isGreeting(text) {
+      return /(привіт|вітаю|доброго дня|hello|hi|hey)/i.test(text);
+    }
+
+    function isNameQuestion(text) {
+      return /(як тебе звати|твоє ім.?я|хто ти)/i.test(text);
+    }
+
+    function isPlanQuestion(text) {
+      return /(план|розплануй|roadmap|кроки|що робити)/i.test(text);
+    }
+
+    function isCodeQuestion(text) {
+      return /(код|html|css|js|javascript|python|react|bug|помилка|функц)/i.test(text);
+    }
+
+    function isExplainQuestion(text) {
+      return /(поясни|що таке|як працює|explain)/i.test(text);
+    }
+
+    function isIdeasQuestion(text) {
+      return /(ідея|ідеї|придумай|brainstorm|назв)/i.test(text);
+    }
+
+    function isWritingQuestion(text) {
+      return /(лист|пост|текст|опис|резюме|cv|мотивац)/i.test(text);
+    }
+
+    function looksLikeAppCommand(text) {
+      return /(відкрий|запусти|open|run|launch)/i.test(text);
+    }
+
+    function normalizeBackendMessage(message) {
+      let normalized = message.trim();
+      const replacements = [
+        [/відкрий/gi, "open"],
+        [/запусти/gi, "open"],
+        [/калькулятор/gi, "calculator"],
+        [/блокнот/gi, "notepad"],
+        [/провідник/gi, "explorer"],
+        [/налаштування/gi, "settings"],
+        [/пейнт/gi, "paint"],
+        [/повершел|повер шел/gi, "powershell"],
+        [/командний рядок/gi, "command prompt"],
+        [/диспетчер задач/gi, "task manager"],
+        [/ютуб/gi, "youtube"],
+        [/гугл/gi, "google"]
+      ];
+
+      for (const [pattern, replacement] of replacements) {
+        normalized = normalized.replace(pattern, replacement);
+      }
+
+      return normalized;
+    }
+
+    function formatAppReply(message) {
+      const text = normalizeBackendMessage(message).toLowerCase();
+      const labels = [
+        ["calculator", "калькулятор"],
+        ["notepad", "блокнот"],
+        ["explorer", "провідник"],
+        ["settings", "налаштування"],
+        ["paint", "paint"],
+        ["powershell", "PowerShell"],
+        ["command prompt", "командний рядок"],
+        ["task manager", "диспетчер задач"],
+        ["youtube", "YouTube"],
+        ["google", "Google"]
+      ];
+      const match = labels.find(([key]) => text.includes(key));
+      return match ? `Відкриваю ${match[1]}.` : "Відкриваю додаток.";
+    }
+
+    function generateLocalReply(userMessage) {
+      const text = userMessage.trim();
+      const recent = getRecentUserTopics();
+
+      if (isGreeting(text) && isNameQuestion(text)) {
+        return "Привіт. Я локальний AI-асистент.";
+      }
+      if (isNameQuestion(text)) {
+        return "Я локальний AI-асистент.";
+      }
+      if (isGreeting(text)) {
+        return "Привіт. Чим допомогти?";
+      }
+      if (looksLikeAppCommand(text)) {
+        return state.backendOnline
+          ? "Відкриваю."
+          : "Запустіть Start-AI.cmd, щоб я відкривав програми.";
+      }
+      if (isPlanQuestion(text)) {
+        return "План: ціль, кроки, перший простий варіант.";
+      }
+      if (isCodeQuestion(text)) {
+        return "Надішліть код або помилку, і я коротко скажу, що виправити.";
+      }
+      if (isExplainQuestion(text)) {
+        return `Коротко: ${text}`;
+      }
+      if (isIdeasQuestion(text)) {
+        return "Ідеї: навчання, тексти, код, додатки.";
+      }
+      if (isWritingQuestion(text)) {
+        return "Шаблон: мета, аудиторія, головна думка, наступний крок.";
+      }
+
+      return recent.length
+        ? `Можу допомогти далі. Контекст: ${recent.join(" | ")}`
+        : "Можу пояснити, скласти план, допомогти з кодом або відкрити програму.";
+    }
+
+    function shortenReply(text) {
+      const lines = String(text)
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      if (!lines.length) return "";
+
+      const compact = lines.slice(0, 2).join("\n");
+      return compact.length > 160 ? `${compact.slice(0, 157)}...` : compact;
+    }
+
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function refreshBackendStatus() {
+      try {
+        const response = await fetchWithTimeout(`${BACKEND_BASE}/api/status`, { method: "GET" }, 1400);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        state.backendOnline = Boolean(data && data.ok);
+      } catch (error) {
+        state.backendOnline = false;
+      }
+
+      if (!state.isLoading) {
+        setStatus(state.backendOnline
+          ? "Сервер готовий. Можна відкривати додатки голосом або текстом."
+          : DEFAULT_STATUS);
+        updateLauncherVisibility();
+      }
+    }
+
+    async function requestBackendReply(userMessage) {
+      const response = await fetchWithTimeout(
+        `${BACKEND_BASE}/api/chat`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: normalizeBackendMessage(userMessage),
+            history: getChatHistory()
+          })
+        },
+        4500
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    function speakText(text) {
+      if (!("speechSynthesis" in window) || !text) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "uk-UA";
+      utterance.rate = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function updateVoiceButton() {
+      els.voiceBtn.classList.toggle("is-recording", state.isRecording);
+      els.voiceBtn.textContent = state.isRecording ? "■" : "🎤";
+      els.voiceBtn.title = state.isRecording ? "Зупинити запис" : "Голосове введення";
+    }
+
+    function stopVoiceInput() {
+      if (state.recognition && state.isRecording) {
+        state.recognition.stop();
+      }
+    }
+
+    function setupVoiceRecognition() {
+      if (!SpeechRecognition) {
+        els.voiceBtn.disabled = true;
+        els.voiceBtn.title = "Браузер не підтримує голосове введення";
+        return;
+      }
+
+      state.recognition = new SpeechRecognition();
+      state.recognition.lang = "uk-UA";
+      state.recognition.interimResults = true;
+      state.recognition.maxAlternatives = 1;
+      state.recognition.continuous = false;
+
+      state.recognition.addEventListener("start", () => {
+        state.isRecording = true;
+        state.voiceDraft = "";
+        updateVoiceButton();
+        setStatus("Слухаю...");
+      });
+
+      state.recognition.addEventListener("result", (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0].transcript)
+          .join(" ")
+          .trim();
+
+        state.voiceDraft = transcript;
+        els.userInput.value = transcript;
+        autoResizeInput();
+      });
+
+      state.recognition.addEventListener("end", () => {
+        state.isRecording = false;
+        updateVoiceButton();
+
+        if (state.voiceDraft.trim() && !state.isLoading) {
+          state.speakReplyOnce = true;
+          els.chatForm.requestSubmit();
+        } else if (!state.isLoading) {
+          setStatus(state.backendOnline
+            ? "Сервер готовий. Можна відкривати додатки голосом або текстом."
+            : DEFAULT_STATUS);
+        }
+      });
+
+      state.recognition.addEventListener("error", () => {
+        state.isRecording = false;
+        updateVoiceButton();
+        setStatus("Не вдалося розпізнати голос. Спробуйте ще раз.");
+      });
+    }
+
+    async function sendMessage(userMessage) {
+      pushMessage("user", userMessage);
+      setLoading(true);
+
+      try {
+        let output = "";
+        let source = "local";
+
+        if (state.backendOnline) {
+          try {
+            const result = await requestBackendReply(userMessage);
+            if (result.mode === "app") {
+              output = formatAppReply(userMessage);
+              source = "app";
+            } else if (result.mode === "ollama" && result.reply) {
+              output = result.reply;
+              source = "ollama";
+            }
+          } catch (error) {
+            console.error(error);
+            state.backendOnline = false;
+          }
+        }
+
+        if (!output) {
+          output = generateLocalReply(userMessage);
+        }
+
+        if (source !== "app") {
+          output = shortenReply(output);
+        }
+
+        pushMessage("assistant", output);
+
+        if (source === "app") {
+          setStatus("Команду виконано. Додаток відкрито.");
+        } else if (source === "ollama") {
+          setStatus("Сервер відповів.");
+        } else {
+          setStatus(state.backendOnline ? "Локальна відповідь готова." : "Відповідь згенерована локально.");
+        }
+
+        if (state.speakReplyOnce) {
+          state.speakReplyOnce = false;
+          speakText(output);
+        }
+      } catch (error) {
+        console.error(error);
+        pushMessage("assistant", `Сталася помилка: ${error.message}`);
+        setStatus("Сталася помилка під час обробки.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function handleChatSubmit(event) {
+      event.preventDefault();
+      if (state.isLoading) return;
+
+      const userMessage = els.userInput.value.trim();
+      if (!userMessage) {
+        setStatus("Введіть повідомлення перед відправкою.");
+        return;
+      }
+
+      els.userInput.value = "";
+      autoResizeInput();
+      await sendMessage(userMessage);
+      els.userInput.focus();
+    }
+
+    function createNewChat() {
+      const chat = createChat();
+      state.chats.unshift(chat);
+      state.activeChatId = chat.id;
+      saveStore();
+      renderMessages();
+      setStatus("Новий чат створено.");
+      els.userInput.focus();
+    }
+
+    els.clearChat.addEventListener("click", createNewChat);
+    els.chatForm.addEventListener("submit", handleChatSubmit);
+    els.userInput.addEventListener("input", autoResizeInput);
+    els.userInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        els.chatForm.requestSubmit();
+      }
+    });
+
+    els.voiceBtn.addEventListener("click", () => {
+      if (!state.recognition || state.isLoading) return;
+      if (state.isRecording) {
+        stopVoiceInput();
+      } else {
+        state.recognition.start();
+      }
+    });
+
+    for (const button of els.shortcuts) {
+      button.addEventListener("click", () => {
+        if (state.isLoading) return;
+        els.userInput.value = `Відкрий ${button.textContent.trim()}`;
+        autoResizeInput();
+        els.chatForm.requestSubmit();
+      });
+    }
+
+    loadStore();
+    renderMessages();
+    autoResizeInput();
+    setupVoiceRecognition();
+    updateVoiceButton();
+    if (window.location.protocol === "file:") {
+      els.launcherBtn.href = decodeURIComponent(window.location.href).replace(/AI\.html(?:[#?].*)?$/i, "Start-AI.cmd");
+    } else {
+      els.launcherBtn.href = "#";
+    }
+    updateLauncherVisibility();
+    refreshBackendStatus();
+  </script>
+</body>
+</html>
