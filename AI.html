@@ -178,6 +178,21 @@
       font-weight: 700;
     }
 
+    .mobile-menu-btn {
+      display: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
+      color: var(--white);
+      cursor: pointer;
+    }
+
+    .sidebar-overlay {
+      display: none;
+    }
+
     .content {
       min-width: 0;
       min-height: 0;
@@ -434,6 +449,22 @@
     @media (max-width: 980px) {
       .app { grid-template-columns: 1fr; }
       .sidebar { display: none; }
+      .mobile-menu-btn { display: inline-grid; place-items: center; }
+      .app.is-sidebar-open .sidebar {
+        display: flex;
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: min(86vw, 320px);
+        z-index: 30;
+        box-shadow: 24px 0 48px rgba(0, 0, 0, 0.45);
+      }
+      .app.is-sidebar-open .sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 20;
+      }
     }
 
     @media (max-width: 640px) {
@@ -453,6 +484,7 @@
 </head>
 <body>
   <main class="app" id="app">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar">
       <div class="sidebar-scroll">
         <div class="sidebar-top">
@@ -482,6 +514,7 @@
     <section class="main">
       <header class="topbar">
         <div class="top-left">
+          <button class="mobile-menu-btn" id="sidebarToggle" type="button">☰</button>
           <span>ChatGPT</span>
           <span>⌄</span>
         </div>
@@ -540,6 +573,10 @@
 
     const els = {
       app: document.getElementById("app"),
+      sidebar: document.querySelector(".sidebar"),
+      collapseBtn: document.querySelector(".collapse-btn"),
+      sidebarOverlay: document.getElementById("sidebarOverlay"),
+      sidebarToggle: document.getElementById("sidebarToggle"),
       clearChat: document.getElementById("clearChat"),
       sidebarHistory: document.getElementById("sidebarHistory"),
       statusText: document.getElementById("statusText"),
@@ -558,6 +595,7 @@
       activeChatId: null,
       isLoading: false,
       backendOnline: false,
+      sidebarOpen: false,
       localUrl: "",
       primaryUrl: "",
       recognition: null,
@@ -706,6 +744,7 @@
         button.addEventListener("click", () => {
           state.activeChatId = chat.id;
           renderMessages();
+          setSidebarOpen(false);
           setStatus("Чат відкрито.");
         });
         els.sidebarHistory.appendChild(button);
@@ -742,10 +781,20 @@
       getActiveChat().messages.push({ role, text });
       saveStore();
       renderMessages();
+      setSidebarOpen(false);
     }
 
     function setStatus(text) {
       els.statusText.textContent = text;
+    }
+
+    function isMobileLayout() {
+      return window.innerWidth <= 980;
+    }
+
+    function setSidebarOpen(nextOpen) {
+      state.sidebarOpen = Boolean(nextOpen) && isMobileLayout();
+      els.app.classList.toggle("is-sidebar-open", state.sidebarOpen);
     }
 
     function setNetworkHint(url) {
@@ -1129,6 +1178,18 @@
       els.userInput.focus();
     }
 
+    els.sidebarToggle.addEventListener("click", () => {
+      setSidebarOpen(!state.sidebarOpen);
+    });
+
+    els.sidebarOverlay.addEventListener("click", () => {
+      setSidebarOpen(false);
+    });
+
+    els.collapseBtn.addEventListener("click", () => {
+      setSidebarOpen(false);
+    });
+
     els.clearChat.addEventListener("click", createNewChat);
     els.chatForm.addEventListener("submit", handleChatSubmit);
     els.userInput.addEventListener("input", autoResizeInput);
@@ -1156,6 +1217,12 @@
         els.chatForm.requestSubmit();
       });
     }
+
+    window.addEventListener("resize", () => {
+      if (!isMobileLayout()) {
+        setSidebarOpen(false);
+      }
+    });
 
     loadStore();
     renderMessages();
